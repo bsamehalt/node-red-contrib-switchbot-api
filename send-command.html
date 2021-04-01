@@ -1,0 +1,84 @@
+<script type="text/javascript">
+    RED.nodes.registerType('send-command', {
+        category: 'function',
+        color: '#CE4842',
+        icon: 'switchbot.png',
+        defaults: {
+            name: {value: ""},
+            authorization: {value: "", type: "switchbot-authorization"},
+            device_name: {value: "", required: true},
+            infrared: {value: false},
+            command: {value: "", required: true},
+            custom_button: {value: false},
+            parameter: {value: "default"}
+        },
+        inputs: 1,
+        outputs: 1,
+        label: function() {
+            return this.name || "send command";
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="send-command">
+    <div class="form-row">
+        <label for="node-input-name">Name</label>
+        <input type="text" id="node-input-name">
+    </div>
+    <div class="form-row">
+        <label for="node-input-authorization">API token</label>
+        <input type="text" id="node-input-authorization">
+    </div>
+    <div class="form-row">
+        <label for="node-input-device_name">Device name</label>
+        <input type="text" id="node-input-device_name" placeholder="Bot">
+    </div>
+    <div class="form-row">
+        <label for="node-input-infrared">Infrared</label>
+        <input type="checkbox" id="node-input-infrared">
+    </div>
+    <div class="form-row">
+        <label for="node-input-command">Command</label>
+        <input type="text" id="node-input-command" placeholder="turnOn">
+    </div>
+    <div class="form-row">
+        <label for="node-input-custom_button">Custom button</label>
+        <input type="checkbox" id="node-input-custom_button">
+    </div>
+    <div class="form-row">
+        <label for="node-input-paramater">Parameter</label>
+        <input type="text" id="node-input-paramater" placeholder="Optional">
+    </div>
+
+</script>
+
+<script type="text/html" data-help-name="send-command">
+    <p>A node that controls SwitchBot devices and infrared remotes using SwitchBot's <code>command</code> web API</p>
+
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt>Name <span class="property-type">string</span></dt>
+        <dd>The label of the node.</dd>
+
+        <dt>Device name <span class="property-type">string</span></dt>
+        <dd>The name of the device.</dd>
+
+        <dt>Infrared <span class="property-type">boolean</span></dt>
+        <dd>Check this if you're controlling an infrared remote.</dd>
+
+        <dt>Command <span class="property-type">string</span></dt>
+        <dd>The command you would like to pass to the device/remote. Full list of commands can be found <a href="https://github.com/OpenWonderLabs/SwitchBotAPI#send-device-control-commands">here</a> <i>(this will take you to SwitchBot's official API documentation page)</i>.</dd>
+
+        <dt>Custom button <span class="property-type">boolean</span></dt>
+        <dd>Check this if the button is a custom one you made. Applicable for infrared devices only.</dd>
+
+        <dt class="optional">Parameter <span class="property-type">string</span></dt>
+        <dd>A custom parameter in case it is required by the command. Full list of commands along with their parameters can be found <a href="https://github.com/OpenWonderLabs/SwitchBotAPI#send-device-control-commands">here</a> <i>(this will take you to SwitchBot's official API documentation page)</i>.</dd>
+    </dl>
+
+    <h3>References</h3>
+        <ul>
+            <li><a href="https://github.com/OpenWonderLabs/SwitchBotAPI#send-device-control-commands">SwitchBot's official API documentation page</a></li>
+        </ul>
+    </script>
+</script>

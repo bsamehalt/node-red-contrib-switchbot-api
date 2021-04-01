@@ -1,0 +1,34 @@
+<script type="text/javascript">
+    RED.nodes.registerType('switchbot-authorization', {
+        category: 'config',
+        defaults: {
+            token: {value: "", required: true}
+        },
+        label: function() {
+            return this.token;
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="switchbot-authorization">
+    <div class="form-row">
+        <label for="node-config-input-token">API Token</label>
+        <input type="text" id="node-config-input-token">
+    </div>
+</script>
+
+<script type="text/html" data-help-name="switchbot-authorization">
+    <p>SwitchBot authorization configuration</p>
+
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt>API token <span class="property-type">string</span></dt>
+        <dd>Your developer token which you can generate and extract using SwitchBot's mobile app. <a href="https://github.com/OpenWonderLabs/SwitchBotAPI#getting-started">Here's</a> a link to SwitchBot's official documentation which will walk you through the required steps to generate the token.</dd>
+    </dl>
+
+    <h3>References</h3>
+        <ul>
+            <li><a href="https://github.com/OpenWonderLabs/SwitchBotAPI#send-device-control-commands">SwitchBot's official API documentation page</a></li>
+        </ul>
+    </script>
+</script>
