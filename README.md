@@ -35,9 +35,6 @@ Your developer token which you just generated.
 ##### Device type
 Type of the device, can either be a SwitchBot device or a virtual infrared remote.
 
-##### Device type
-Type of the device, can either be a SwitchBot device or a virtual infrared remote.
-
 ##### Device name
 The name of the device.
 
