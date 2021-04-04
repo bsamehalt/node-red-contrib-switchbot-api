@@ -1,6 +1,6 @@
 {
   "name": "node-red-contrib-switchbot-api",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "description": "A node to control SwitchBot devices via its web APIs",
   "main": "send-command.js",
   "scripts": {
