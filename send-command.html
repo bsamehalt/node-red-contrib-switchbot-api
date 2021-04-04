@@ -1,84 +1,132 @@
 <script type="text/javascript">
-    RED.nodes.registerType('send-command', {
-        category: 'function',
-        color: '#CE4842',
-        icon: 'switchbot.png',
-        defaults: {
-            name: {value: ""},
-            authorization: {value: "", type: "switchbot-authorization"},
-            device_name: {value: "", required: true},
-            infrared: {value: false},
-            command: {value: "", required: true},
-            custom_button: {value: false},
-            parameter: {value: "default"}
-        },
-        inputs: 1,
-        outputs: 1,
-        label: function() {
-            return this.name || "send command";
+  RED.nodes.registerType('send-command', {
+    category: 'function',
+    color: '#CE4842',
+    icon: 'switchbot.png',
+    defaults: {
+      name: {value: ""},
+      authorization: {value: "", type: "switchbot-authorization"},
+      device_id: {value: "", required: true, validate:function(v) {
+          return v !== 'select';
         }
+      },
+      device_type: {value: false, required: true},
+      command: {value: "", required: true},
+      custom_button: {value: false},
+      parameter: {value: "default"}
+    },
+    inputs: 1,
+    outputs: 1,
+    label: function() {
+      return this.name || "send command";
+    },
+    oneditprepare: function() {
+      var node = this;
+
+      refreshDevices(node.device_id, false);
+
+      $("#node-input-authorization").change(function(e) {
+        refreshDevices(node.device_id, false);
+      });
+
+      $("#node-input-device_type").change(function(e) {
+        refreshDevices(node.device_id, false);
+      });
+
+      $("#node-input-refresh-devices").click(function(e) {
+        refreshDevices(null, true);
+      });
+    },
+    oneditsave: function() {
+      var node = this;
+
+      node.device_id = $("#node-input-device_id").val();
+    }
+  });
+
+  function refreshDevices(selectedDeviceId, shouldForceRefresh, testing) {
+    var device_type = $("#node-input-device_type").val();
+    var token = $("#node-input-authorization option:selected").text();
+
+    if (token == null || $("#node-input-authorization option:last").is(":selected") || device_type == null) {
+      return;
+    }
+
+    $.getJSON(`/switchbot/devices/${device_type}`, { 'token': token, 'forceRefresh': shouldForceRefresh }, function(devices, status) {
+      $('#node-input-device_id').empty();
+      $('#node-input-device_id').append('<option value="select">Select device</option>');
+
+      devices.forEach(device => {
+        $('#node-input-device_id').append(`<option value=${device.deviceId}>${device.deviceName}</option>`);
+      });
+
+      if (selectedDeviceId == null) {
+        $("#node-input-device_id").val('select');
+      } else {
+        $("#node-input-device_id").val(selectedDeviceId);
+      }
     });
+  }
+
 </script>
 
 <script type="text/html" data-template-name="send-command">
-    <div class="form-row">
-        <label for="node-input-name">Name</label>
-        <input type="text" id="node-input-name">
-    </div>
-    <div class="form-row">
-        <label for="node-input-authorization">API token</label>
-        <input type="text" id="node-input-authorization">
-    </div>
-    <div class="form-row">
-        <label for="node-input-device_name">Device name</label>
-        <input type="text" id="node-input-device_name" placeholder="Bot">
-    </div>
-    <div class="form-row">
-        <label for="node-input-infrared">Infrared</label>
-        <input type="checkbox" id="node-input-infrared">
-    </div>
-    <div class="form-row">
-        <label for="node-input-command">Command</label>
-        <input type="text" id="node-input-command" placeholder="turnOn">
-    </div>
-    <div class="form-row">
-        <label for="node-input-custom_button">Custom button</label>
-        <input type="checkbox" id="node-input-custom_button">
-    </div>
-    <div class="form-row">
-        <label for="node-input-paramater">Parameter</label>
-        <input type="text" id="node-input-paramater" placeholder="Optional">
-    </div>
+  <div class="form-row">
+    <label for="node-input-name">Name</label>
+    <input type="text" id="node-input-name">
+  </div>
+  <div class="form-row">
+    <label for="node-input-authorization">API token</label>
+    <input type="text" id="node-input-authorization">
+  </div>
+  <div class="form-row">
+    <label for="node-input-device_type">Device type</label>
+    <select id="node-input-device_type">
+      <option value='switchbot'>SwitchBot device</option>
+      <option value='infrared'>Infrared remote</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-device_id">Device name</label>
+    <select id="node-input-device_id">
+    </select>
+    <button type="button" id="node-input-refresh-devices" class="red-ui-button">Refresh</button>
+  </div>
+  <div class="form-row">
+    <label for="node-input-command">Command</label>
+    <input type="text" id="node-input-command" placeholder="turnOn">
+  </div>
+  <div class="form-row">
+    <label for="node-input-paramater">Parameter</label>
+    <input type="text" id="node-input-paramater" placeholder="Optional">
+  </div>
 
 </script>
 
 <script type="text/html" data-help-name="send-command">
-    <p>A node that controls SwitchBot devices and infrared remotes using SwitchBot's <code>command</code> web API</p>
+  <p>A node that controls SwitchBot devices using SwitchBot's <code>command</code> web API</p>
 
-    <h3>Inputs</h3>
-    <dl class="message-properties">
-        <dt>Name <span class="property-type">string</span></dt>
-        <dd>The label of the node.</dd>
+  <h3>Inputs</h3>
+  <dl class="message-properties">
+    <dt>Name <span class="property-type">string</span></dt>
+    <dd>The label of the node.</dd>
 
-        <dt>Device name <span class="property-type">string</span></dt>
-        <dd>The name of the device.</dd>
+    <dt>Device name <span class="property-type">string</span></dt>
+    <dd>Type of the device, can either be a SwitchBot device or a virtual infrared remote.</dd>
 
-        <dt>Infrared <span class="property-type">boolean</span></dt>
-        <dd>Check this if you're controlling an infrared remote.</dd>
+    <dt>Device name <span class="property-type">string</span></dt>
+    <dd>The name of the device.</dd>
 
-        <dt>Command <span class="property-type">string</span></dt>
-        <dd>The command you would like to pass to the device/remote. Full list of commands can be found <a href="https://github.com/OpenWonderLabs/SwitchBotAPI#send-device-control-commands">here</a> <i>(this will take you to SwitchBot's official API documentation page)</i>.</dd>
+    <dt>Command <span class="property-type">string</span></dt>
+    <dd>The command you would like to pass to the device/remote. Full list of commands can be found <a href="https://github.com/OpenWonderLabs/SwitchBotAPI#send-device-control-commands">here</a> <i>(this will take you to SwitchBot's official API documentation page)</i>.</dd>
 
-        <dt>Custom button <span class="property-type">boolean</span></dt>
-        <dd>Check this if the button is a custom one you made. Applicable for infrared devices only.</dd>
+    <dt class="optional">Parameter <span class="property-type">string</span></dt>
+    <dd>A custom parameter in case it is required by the command. Full list of commands along with their parameters can be found <a href="https://github.com/OpenWonderLabs/SwitchBotAPI#send-device-control-commands">here</a> <i>(this will take you to SwitchBot's official API documentation page)</i>.</dd>
+  </dl>
 
-        <dt class="optional">Parameter <span class="property-type">string</span></dt>
-        <dd>A custom parameter in case it is required by the command. Full list of commands along with their parameters can be found <a href="https://github.com/OpenWonderLabs/SwitchBotAPI#send-device-control-commands">here</a> <i>(this will take you to SwitchBot's official API documentation page)</i>.</dd>
-    </dl>
-
-    <h3>References</h3>
-        <ul>
-            <li><a href="https://github.com/OpenWonderLabs/SwitchBotAPI#send-device-control-commands">SwitchBot's official API documentation page</a></li>
-        </ul>
-    </script>
+  <h3>References</h3>
+  <ul>
+    <li><a href="https://github.com/OpenWonderLabs/SwitchBotAPI#send-device-control-commands">SwitchBot's official API documentation page</a></li>
+  </ul>
+</script>
 </script>

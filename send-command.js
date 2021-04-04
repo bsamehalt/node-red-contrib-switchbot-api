@@ -1,29 +1,37 @@
 const axios = require('axios');
 const SwitchBotAPIClient = require('./switchbot-api-client');
 
+var globalContext;
+
 module.exports = function(RED) {
     function sendCommandNode(config) {
         RED.nodes.createNode(this, config);
         var node = this;
 
-        this.device_name = config.device_name;
+        this.device_id = config.device_id;
+        this.device_type = config.device_type;
         this.command = config.command;
         this.parameter = config.parameter;
-        this.infrared = config.infrared;
-        this.custom_button = config.custom_button;
         this.authorization = RED.nodes.getNode(config.authorization);
 
-        node.on('input', function(msg, send, done) {
-          var globalContext = this.context().global;
-          let client = new SwitchBotAPIClient(this.authorization.token);
+        globalContext = this.context().global;
 
-          fetchDevices(client, globalContext, this.infrared)
-            .then(devices => getDeviceId(devices, this.device_name))
-            .then(id => sendCommandToDevice(client, id, this.command, this.custom_button, this.parameter))
+        node.on('input', function(msg, send, done) {
+          fetchDevices(this.authorization.token, globalContext, false, this.device_type)
+            .then(id => sendCommandToDevice(this.authorization.token, this.device_id, this.command, this.parameter))
             .then(data => {
               this.status({fill: 'green', shape: 'dot', text: 'Success'});
 
-              msg.payload = `Successfully executed command '${this.command}' on ${this.device_name}'`;
+              msg.payload = {
+                'status': 'success',
+                'message': `Successfully executed command '${this.command}' on ${this.device_id}`,
+                'data': {
+                  'deviceId': this.device_id,
+                  'command': this.command,
+                  'parameter': this.parameter
+                }
+              };
+
               node.send(msg);
             })
             .catch(error => {
@@ -38,23 +46,19 @@ module.exports = function(RED) {
         });
     }
 
-    function fetchDevices(client, globalContext, infrared) {
+    function fetchDevices(token, globalContext, forceRefresh, device_type) {
       return new Promise(function(resolve, reject) {
-        var stored_devices = infrared ? globalContext.get('switchbot_infraredRemoteList') : globalContext.get('switchbot_deviceList');
-
-        if (stored_devices === undefined) {
+        var stored_devices = device_type == 'infrared' ? globalContext.get('switchbot_infraredRemoteList') : globalContext.get('switchbot_deviceList');
+        if (stored_devices === undefined || forceRefresh === true) {
+          var client = new SwitchBotAPIClient(token);
           client.fetchDevices()
             .then(data => {
-              var devices;
-              if (infrared) {
-                devices = data.infraredRemoteList;
-                globalContext.set('switchbot_infraredRemoteList', devices);
-              } else {
-                devices = data.deviceList;
-                globalContext.set('switchbot_deviceList', devices);
-              }
+              var fetchedDevices = device_type == 'infrared' ? data.infraredRemoteList : data.deviceList;
 
-              resolve(devices);
+              globalContext.set('switchbot_infraredRemoteList', data.infraredRemoteList);
+              globalContext.set('switchbot_deviceList', data.deviceList);
+
+              resolve(fetchedDevices);
             })
             .catch(error => {
               reject(error);
@@ -62,25 +66,17 @@ module.exports = function(RED) {
         } else {
           resolve(stored_devices);
         }
-        
       });
     }
 
-    function getDeviceId(devices, name) {
-      return new Promise(function(resolve, reject) {
-        let device = devices.find(device => device.deviceName === name);
-        if (device) {
-          resolve(device.deviceId);
-        } else {
-          reject('Device not found');
-        }
-      });
-    }
+    function sendCommandToDevice(token, id, command, parameter) {
+      if (id == null) {
+        return;
+      }
 
-    function sendCommandToDevice(client, id, command, custom_button, parameter) {
       return new Promise(function(resolve, reject) {
-        let commandType = custom_button ? 'customize' : 'command';
-        client.sendCommandToDevice(id, command, commandType, parameter)
+        var client = new SwitchBotAPIClient(token);
+        client.sendCommandToDevice(id, command, 'command', parameter)
           .then(data => {
             resolve(data);
           })
@@ -89,6 +85,16 @@ module.exports = function(RED) {
           });
       });
     }
+
+    RED.httpAdmin.get("/switchbot/devices/:device_type", RED.auth.needsPermission('send-command.read'), function(req, res) {
+      fetchDevices(req.query.token, globalContext, req.query.forceRefresh === 'true', req.params.device_type)
+        .then(data => {
+          res.json(data);
+        })
+        .catch(error => {
+          res.sendStatus(500);
+        });
+    });
 
     RED.nodes.registerType('send-command', sendCommandNode);
 }
